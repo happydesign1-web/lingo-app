@@ -33,8 +33,8 @@ st.markdown("""<style>
 [data-testid="stPills"] button:hover { background:#ede9fe !important; }
 .stButton>button { width:100% !important; min-height:50px !important; font-size:1rem !important;
   border-radius:14px !important; font-weight:700 !important; margin:3px 0 !important; }
-.stRadio label { font-size:1rem !important; padding:10px 14px !important;
-  border:2px solid #e5e7eb; border-radius:12px; display:block; background:white; margin:4px 0; cursor:pointer; }
+.stRadio label { font-size:0.82rem !important; padding:7px 10px !important;
+  border:2px solid #e5e7eb; border-radius:12px; display:block; background:white; margin:3px 0; cursor:pointer; line-height:1.3 !important; }
 audio { width:100% !important; border-radius:10px; margin:6px 0; }
 .stTextInput input { font-size:1.1rem !important; padding:12px !important; border-radius:12px !important; }
 h1 { font-size:1.5rem !important; text-align:center; }
@@ -204,6 +204,7 @@ IMPORTANT: Do NOT repeat these already-used sentences: [{used}]
 
 Requirements:
 - Use intermediate~advanced level sentence (NOT basic greetings like Hello/Thank you)
+- Keep sentences SHORT: 6-9 words maximum so they fit on one line on mobile
 - Include at least ONE advanced vocabulary word or idiom (e.g. procrastinate, come across, be on the fence, meticulous, pull through)
 - 1 correct English sentence + 3 distractors that sound similar but differ in meaning
 
