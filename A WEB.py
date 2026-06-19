@@ -288,10 +288,9 @@ Shuffle the options array randomly.
 <script>var c=0,a=document.getElementById('a');{autoplay_js}</script>
 </body></html>""", height=55, scrolling=False)
 
-    choice = st.radio("들은 문장은?", data["options"], key="ls_radio")
-
     if not st.session_state.ls_ans:
-        if st.button("✔️ 정답 확인", type="primary"):
+        choice = st.pills("들은 문장은?", data["options"], key="ls_pills", label_visibility="collapsed")
+        if choice is not None:
             if choice == data["correct"]:
                 add_correct(10); st.session_state.ls_res = "correct"
             else:
@@ -775,10 +774,9 @@ CRITICAL: The "answer" field must be the EXACT same string as one of the four op
     prog_bar(qi, len(questions))
     st.markdown(f'<div class="q-card">{q["question"]}</div>', unsafe_allow_html=True)
 
-    choice = st.radio("정답을 고르세요", q["options"], key=f"st_radio_{qi}")
-
     if not st.session_state.st_ans:
-        if st.button("✔️ 정답 확인", type="primary"):
+        choice = st.pills("정답을 고르세요", q["options"], key=f"st_pills_{qi}", label_visibility="collapsed")
+        if choice is not None:
             if choice == q["answer"]:
                 add_correct(10); st.session_state.st_fb = "correct"
             else:
