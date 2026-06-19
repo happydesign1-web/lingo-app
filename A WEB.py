@@ -457,27 +457,43 @@ Respond ONLY raw JSON:
                 af = io.BytesIO(audio["bytes"]); af.name = "audio.wav"
                 trans = client.audio.transcriptions.create(model="whisper-large-v3", file=af, response_format="text")
                 spoken = trans.strip()
-                st.markdown(f"🗣️ **{spoken}**")
-                ep = f"""
-Compare spoken vs target for a Korean English learner.
-Target: "{data['sentence']}"
-Spoken: "{spoken}"
-Respond ONLY JSON: {{"score":85,"grade":"A","feedback":"한국어로 격려 피드백 1-2문장"}}
+
+                if not spoken or spoken in [".", ",", ""]:
+                    st.warning("녹음이 너무 짧아요. 다시 말해보세요!")
+                else:
+                    st.markdown(f"🗣️ **{spoken}**")
+                    ep = f"""
+You are evaluating English pronunciation for a Korean learner.
+Target sentence: "{data['sentence']}"
+What the learner said: "{spoken}"
+
+Compare them and respond ONLY with this exact JSON format:
+{{"score": 82, "grade": "A", "feedback": "억양이 자연스러워요! 조금 더 빠르게 말해보세요."}}
+
+Rules:
+- score: integer 0-100
+- grade: "S" if score>=95, "A" if score>=80, "B" if score>=65, "C" if below 65
+- feedback: a single Korean string of 1-2 encouraging sentences (NOT an object, NOT a template)
 """
-                r = json.loads(ai(ep, json_mode=True))
-                sc = r.get("score",0); gr = r.get("grade","C"); fb = r.get("feedback","")
-                ge = {"S":"🌟","A":"🎉","B":"👍","C":"💪"}.get(gr,"💪")
-                bc = "#22c55e" if sc>=80 else "#f59e0b" if sc>=60 else "#ef4444"
-                st.markdown(f"""<div style='background:#f8fafc;border-radius:16px;padding:14px;text-align:center;margin:8px 0;'>
-                    <div style='font-size:1.8rem;'>{ge}</div>
-                    <div style='font-size:1.4rem;font-weight:800;color:{bc};'>{sc}점 · {gr}등급</div>
-                    <div style='background:#e5e7eb;border-radius:99px;height:10px;margin:8px 0;overflow:hidden;'>
-                      <div style='background:{bc};width:{sc}%;height:100%;border-radius:99px;'></div></div>
-                    <div style='color:#374151;'>{fb}</div>
-                </div>""", unsafe_allow_html=True)
-                if sc >= 80: add_correct(15)
-                elif sc >= 60: add_correct(8)
-                else: add_wrong()
+                    r = json.loads(ai(ep, json_mode=True))
+                    sc = r.get("score", 0)
+                    gr = r.get("grade", "C")
+                    fb = r.get("feedback", "")
+                    # feedback이 dict로 왔을 경우 대비
+                    if isinstance(fb, dict):
+                        fb = fb.get("content", fb.get("detail", str(fb)))
+                    ge = {"S":"🌟","A":"🎉","B":"👍","C":"💪"}.get(gr,"💪")
+                    bc = "#22c55e" if sc>=80 else "#f59e0b" if sc>=60 else "#ef4444"
+                    st.markdown(f"""<div style='background:#f8fafc;border-radius:16px;padding:14px;text-align:center;margin:8px 0;'>
+                        <div style='font-size:1.8rem;'>{ge}</div>
+                        <div style='font-size:1.4rem;font-weight:800;color:{bc};'>{sc}점 · {gr}등급</div>
+                        <div style='background:#e5e7eb;border-radius:99px;height:10px;margin:8px 0;overflow:hidden;'>
+                          <div style='background:{bc};width:{sc}%;height:100%;border-radius:99px;'></div></div>
+                        <div style='color:#374151;'>{fb}</div>
+                    </div>""", unsafe_allow_html=True)
+                    if sc >= 80: add_correct(15)
+                    elif sc >= 60: add_correct(8)
+                    else: add_wrong()
             except Exception as e:
                 st.error(f"분석 오류: {e}")
 
