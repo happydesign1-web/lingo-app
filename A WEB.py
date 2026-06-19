@@ -75,7 +75,7 @@ def _init():
         "mt_data":None, "mt_matched":None, "mt_sk":None, "mt_se":None,
         "mt_ko":None, "mt_eo":None, "mt_wrong":False, "mt_done":False,
         # 스피킹
-        "sp_data":None,
+        "sp_data":None, "sp_result":None,
         # 문장 만들기
         "wo_data":None, "wo_built":None, "wo_avail":None, "wo_ans":False, "wo_res":"",
         # 스토리
@@ -412,7 +412,9 @@ def show_speaking():
     score_bar()
     if game_over(): return
 
-    def clear(): st.session_state.sp_data = None
+    def clear():
+        st.session_state.sp_data = None
+        st.session_state.sp_result = None
     c2 = nav(clear)
     with c2:
         if st.button("새 문장 🔄"): clear(); st.rerun()
@@ -448,57 +450,61 @@ Respond ONLY raw JSON:
         st.markdown("**원어민 발음 듣기**")
         st.audio(fp, format="audio/mp3")
 
-    st.markdown("**🎙️ 따라 말하기**")
-    audio = mic_recorder(start_prompt="녹음 시작", stop_prompt="🛑 완료", key="sp_mic")
+    if not st.session_state.get("sp_result"):
+        st.markdown("**🎙️ 따라 말하기**")
+        audio = mic_recorder(start_prompt="녹음 시작", stop_prompt="🛑 완료", key="sp_mic")
 
-    if audio and "bytes" in audio:
-        with st.spinner("발음 분석 중..."):
-            try:
-                af = io.BytesIO(audio["bytes"]); af.name = "audio.wav"
-                trans = client.audio.transcriptions.create(model="whisper-large-v3", file=af, response_format="text")
-                spoken = trans.strip()
+        if audio and "bytes" in audio:
+            with st.spinner("발음 분석 중..."):
+                try:
+                    af = io.BytesIO(audio["bytes"]); af.name = "audio.wav"
+                    trans = client.audio.transcriptions.create(model="whisper-large-v3", file=af, response_format="text")
+                    spoken = trans.strip()
 
-                if not spoken or spoken in [".", ",", ""]:
-                    st.warning("녹음이 너무 짧아요. 다시 말해보세요!")
-                else:
-                    st.markdown(f"🗣️ **{spoken}**")
-                    ep = f"""
+                    if not spoken or spoken in [".", ",", ""]:
+                        st.warning("녹음이 너무 짧아요. 다시 말해보세요!")
+                    else:
+                        ep = f"""
 You are evaluating English pronunciation for a Korean learner.
 Target sentence: "{data['sentence']}"
 What the learner said: "{spoken}"
 
-Compare them and respond ONLY with this exact JSON format:
-{{"score": 82, "grade": "A", "feedback": "억양이 자연스러워요! 조금 더 빠르게 말해보세요."}}
+Respond ONLY with this exact JSON. The feedback field MUST be written in Korean only (한국어만 사용, 다른 언어 절대 금지):
+{{"score": 82, "grade": "A", "feedback": "발음이 정확해요! 조금 더 자신감 있게 말해보세요."}}
 
-Rules:
 - score: integer 0-100
-- grade: "S" if score>=95, "A" if score>=80, "B" if score>=65, "C" if below 65
-- feedback: a single Korean string of 1-2 encouraging sentences (NOT an object, NOT a template)
+- grade: S(95+) A(80+) B(65+) C(below 65)
+- feedback: 한국어로만 1-2문장. NO Vietnamese, NO English, NO other language.
 """
-                    r = json.loads(ai(ep, json_mode=True))
-                    sc = r.get("score", 0)
-                    gr = r.get("grade", "C")
-                    fb = r.get("feedback", "")
-                    # feedback이 dict로 왔을 경우 대비
-                    if isinstance(fb, dict):
-                        fb = fb.get("content", fb.get("detail", str(fb)))
-                    ge = {"S":"🌟","A":"🎉","B":"👍","C":"💪"}.get(gr,"💪")
-                    bc = "#22c55e" if sc>=80 else "#f59e0b" if sc>=60 else "#ef4444"
-                    st.markdown(f"""<div style='background:#f8fafc;border-radius:16px;padding:14px;text-align:center;margin:8px 0;'>
-                        <div style='font-size:1.8rem;'>{ge}</div>
-                        <div style='font-size:1.4rem;font-weight:800;color:{bc};'>{sc}점 · {gr}등급</div>
-                        <div style='background:#e5e7eb;border-radius:99px;height:10px;margin:8px 0;overflow:hidden;'>
-                          <div style='background:{bc};width:{sc}%;height:100%;border-radius:99px;'></div></div>
-                        <div style='color:#374151;'>{fb}</div>
-                    </div>""", unsafe_allow_html=True)
-                    if sc >= 80: add_correct(15)
-                    elif sc >= 60: add_correct(8)
-                    else: add_wrong()
-                    if st.button("다음 문장 →", type="primary"):
-                        st.session_state.sp_data = None
+                        r = json.loads(ai(ep, json_mode=True))
+                        sc = r.get("score", 0)
+                        gr = r.get("grade", "C")
+                        fb = r.get("feedback", "")
+                        if isinstance(fb, dict):
+                            fb = fb.get("content", fb.get("detail", str(fb)))
+                        if sc >= 80: add_correct(15)
+                        elif sc >= 60: add_correct(8)
+                        else: add_wrong()
+                        st.session_state.sp_result = {"sc": sc, "gr": gr, "fb": fb, "spoken": spoken}
                         st.rerun()
-            except Exception as e:
-                st.error(f"분석 오류: {e}")
+                except Exception as e:
+                    st.error(f"분석 오류: {e}")
+
+    if st.session_state.get("sp_result"):
+        res = st.session_state.sp_result
+        sc, gr, fb = res["sc"], res["gr"], res["fb"]
+        st.markdown(f"🗣️ **{res['spoken']}**")
+        ge = {"S":"🌟","A":"🎉","B":"👍","C":"💪"}.get(gr,"💪")
+        bc = "#22c55e" if sc>=80 else "#f59e0b" if sc>=60 else "#ef4444"
+        st.markdown(f"""<div style='background:#f8fafc;border-radius:16px;padding:14px;text-align:center;margin:8px 0;'>
+            <div style='font-size:1.8rem;'>{ge}</div>
+            <div style='font-size:1.4rem;font-weight:800;color:{bc};'>{sc}점 · {gr}등급</div>
+            <div style='background:#e5e7eb;border-radius:99px;height:10px;margin:8px 0;overflow:hidden;'>
+              <div style='background:{bc};width:{sc}%;height:100%;border-radius:99px;'></div></div>
+            <div style='color:#374151;'>{fb}</div>
+        </div>""", unsafe_allow_html=True)
+        if st.button("다음 문장 →", type="primary"):
+            clear(); st.rerun()
 
 # ════════════════════════════════════════════════════════════════════════════════
 # 4. 문장 만들기 (단어 순서)
