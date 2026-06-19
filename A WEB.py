@@ -208,15 +208,18 @@ Requirements:
 - Include at least ONE advanced vocabulary word or idiom (e.g. procrastinate, come across, be on the fence, meticulous, pull through)
 - 1 correct English sentence + 3 distractors that sound similar but differ in meaning
 
+LANGUAGE RULE: korean / tip / vocab meaning fields MUST be written in Korean (한국어) ONLY.
+NEVER use Russian, Vietnamese, Chinese, Japanese, or any other language. Korean characters only for those fields.
+
 Respond ONLY raw JSON:
 {{
   "correct": "The sentence (must include at least one advanced word)",
   "options": ["correct sentence","wrong 1","wrong 2","wrong 3"],
-  "korean": "정답 한국어 뜻",
-  "tip": "이 표현 팁 (한국어 한 줄)",
+  "korean": "정답 한국어 뜻 (한국어만)",
+  "tip": "이 표현 팁 (한국어만)",
   "vocab": [
-    {{"word": "advanced word from sentence", "meaning": "한국어 뜻", "example": "example sentence"}},
-    {{"word": "another key word or idiom", "meaning": "한국어 뜻", "example": "example sentence"}}
+    {{"word": "advanced word from sentence", "meaning": "한국어 뜻만", "example": "example sentence"}},
+    {{"word": "another key word or idiom", "meaning": "한국어 뜻만", "example": "example sentence"}}
   ]
 }}
 Shuffle the options array randomly.
@@ -443,15 +446,18 @@ Requirements:
 - Examples of good advanced words: eloquent, spontaneous, procrastinate, come to terms with, on the fence, pull off, bear in mind, shed light on
 - NOT basic words like go/come/eat/drink
 
+LANGUAGE RULE: korean / tip / vocab meaning fields MUST be written in Korean (한국어) ONLY.
+NEVER use Russian, Vietnamese, Chinese, Japanese, or any other language. Korean characters only for those fields.
+
 Respond ONLY raw JSON:
 {{
   "sentence": "English sentence with at least one advanced word",
-  "korean": "한국어 번역",
-  "tip": "발음 팁 (한국어 한 줄)",
+  "korean": "한국어 번역만",
+  "tip": "발음 팁 (한국어만)",
   "difficulty": "Easy/Medium/Hard",
   "vocab": [
-    {{"word": "advanced word from sentence", "meaning": "한국어 뜻", "example": "another example sentence"}},
-    {{"word": "another key expression", "meaning": "한국어 뜻", "example": "another example sentence"}}
+    {{"word": "advanced word from sentence", "meaning": "한국어 뜻만", "example": "another example sentence"}},
+    {{"word": "another key expression", "meaning": "한국어 뜻만", "example": "another example sentence"}}
   ]
 }}
 """
@@ -579,14 +585,17 @@ Requirements:
 - Examples of good advanced words: inevitable, spontaneous, meticulous, come to terms with, pull through, bring up, take for granted
 - NOT basic words like go/come/eat
 
+LANGUAGE RULE: korean / vocab meaning fields MUST be written in Korean (한국어) ONLY.
+NEVER use Russian, Vietnamese, Chinese, Japanese, or any other language. Korean characters only for those fields.
+
 Respond ONLY raw JSON:
 {{
-  "korean": "한국어 문장",
+  "korean": "한국어 문장만",
   "sentence": "The correct English sentence with at least one advanced word",
   "words": ["word1","word2","word3","word4","word5"],
   "vocab": [
-    {{"word": "advanced word from sentence", "meaning": "한국어 뜻", "example": "example sentence"}},
-    {{"word": "another key word or idiom", "meaning": "한국어 뜻", "example": "example sentence"}}
+    {{"word": "advanced word from sentence", "meaning": "한국어 뜻만", "example": "example sentence"}},
+    {{"word": "another key word or idiom", "meaning": "한국어 뜻만", "example": "example sentence"}}
   ]
 }}
 words = sentence split by spaces exactly.
