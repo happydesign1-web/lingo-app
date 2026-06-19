@@ -583,10 +583,10 @@ Word ordering exercise for Korean English learner. Category: '{st.session_state.
 IMPORTANT: Do NOT repeat these already-used sentences: [{used}]
 
 Requirements:
-- Use 5-8 words
-- Mix of easy/medium/hard: most sentences intermediate level, occasionally one harder word
-- NOT kindergarten level (not just "I go to school") but also NOT overly academic
-- Natural everyday English that a learner would actually use
+- STRICTLY 5 to 6 words only. Count carefully before responding.
+- Simple, natural sentences. Easy to intermediate level.
+- Good examples: "I really enjoy this coffee", "She looks so tired today", "Can we eat out tonight"
+- The words array must have EXACTLY 5 or 6 elements. No more.
 
 LANGUAGE RULE: korean / vocab meaning fields MUST be written in Korean (한국어) ONLY.
 NEVER use Russian, Vietnamese, Chinese, Japanese, or any other language. Korean characters only for those fields.
