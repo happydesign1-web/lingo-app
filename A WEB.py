@@ -494,6 +494,9 @@ Rules:
                     if sc >= 80: add_correct(15)
                     elif sc >= 60: add_correct(8)
                     else: add_wrong()
+                    if st.button("다음 문장 →", type="primary"):
+                        st.session_state.sp_data = None
+                        st.rerun()
             except Exception as e:
                 st.error(f"분석 오류: {e}")
 
