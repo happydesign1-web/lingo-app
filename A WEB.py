@@ -70,14 +70,14 @@ def _init():
         "score":0, "lives":5, "streak":0, "total_ok":0, "total":0,
         "mode":"home", "cat":"일상 회화",
         # 듣기
-        "ls_data":None, "ls_ans":False, "ls_res":"",
+        "ls_data":None, "ls_ans":False, "ls_res":"", "ls_audio_b64":None, "ls_history":[],
         # 짝 맞추기
         "mt_data":None, "mt_matched":None, "mt_sk":None, "mt_se":None,
         "mt_ko":None, "mt_eo":None, "mt_wrong":False, "mt_done":False,
         # 스피킹
-        "sp_data":None, "sp_result":None,
+        "sp_data":None, "sp_result":None, "sp_history":[],
         # 문장 만들기
-        "wo_data":None, "wo_built":None, "wo_avail":None, "wo_ans":False, "wo_res":"",
+        "wo_data":None, "wo_built":None, "wo_avail":None, "wo_ans":False, "wo_res":"", "wo_history":[],
         # 스토리
         "st_data":None, "st_qi":0, "st_ans":False, "st_fb":"",
     }
@@ -194,28 +194,36 @@ def show_listening():
     if not st.session_state.ls_data:
         with st.spinner("문제 만드는 중..."):
             situations = ["식당 주문", "길 묻기", "쇼핑 계산", "전화 통화", "의사 진료", "호텔 체크인",
-                          "친구와 약속", "직장 회의", "날씨 대화", "취미 이야기", "감정 표현", "사과/감사"]
+                          "친구와 약속", "직장 회의", "날씨 대화", "취미 이야기", "감정 표현", "사과/감사",
+                          "면접", "대중교통", "카페 주문", "병원 예약", "집 구하기", "은행 업무"]
             situation = random.choice(situations)
+            used = ", ".join([f'"{s}"' for s in st.session_state.ls_history[-8:]]) if st.session_state.ls_history else "없음"
             p = f"""
 Make a listening quiz about '{situation}' in category '{st.session_state.cat}'.
-Use a NATURAL conversational sentence (intermediate~advanced level, NOT basic greetings).
-1 correct English sentence + 3 distractors that sound SIMILAR but have different meaning.
+IMPORTANT: Do NOT repeat these already-used sentences: [{used}]
+
+Requirements:
+- Use intermediate~advanced level sentence (NOT basic greetings like Hello/Thank you)
+- Include at least ONE advanced vocabulary word or idiom (e.g. procrastinate, come across, be on the fence, meticulous, pull through)
+- 1 correct English sentence + 3 distractors that sound similar but differ in meaning
+
 Respond ONLY raw JSON:
 {{
-  "correct": "The sentence to play as audio",
-  "options": ["correct sentence here","wrong 1","wrong 2","wrong 3"],
+  "correct": "The sentence (must include at least one advanced word)",
+  "options": ["correct sentence","wrong 1","wrong 2","wrong 3"],
   "korean": "정답 한국어 뜻",
   "tip": "이 표현 팁 (한국어 한 줄)",
   "vocab": [
-    {{"word": "key word or phrase from sentence", "meaning": "한국어 뜻", "example": "another example sentence"}},
-    {{"word": "another key word or idiom", "meaning": "한국어 뜻", "example": "another example sentence"}}
+    {{"word": "advanced word from sentence", "meaning": "한국어 뜻", "example": "example sentence"}},
+    {{"word": "another key word or idiom", "meaning": "한국어 뜻", "example": "example sentence"}}
   ]
 }}
-vocab: 문장에서 중요한 단어/숙어/표현 2~3개. Shuffle the options array randomly.
+Shuffle the options array randomly.
 """
             try:
                 d = json.loads(ai(p, json_mode=True))
                 random.shuffle(d["options"])
+                st.session_state.ls_history.append(d.get("correct",""))
                 st.session_state.ls_data = d
                 st.session_state.ls_ans = False
                 st.session_state.ls_res = ""
@@ -415,24 +423,41 @@ def show_speaking():
     def clear():
         st.session_state.sp_data = None
         st.session_state.sp_result = None
+        # 히스토리는 유지 (중복 방지용)
     c2 = nav(clear)
     with c2:
         if st.button("새 문장 🔄"): clear(); st.rerun()
 
     if not st.session_state.sp_data:
         with st.spinner("문장 불러오는 중..."):
+            history = st.session_state.sp_history
+            used = ", ".join([f'"{s}"' for s in history[-10:]]) if history else "없음"
             p = f"""
 Speaking practice for Korean learner of English. Category: '{st.session_state.cat}'.
+IMPORTANT: Do NOT use any of these already-used sentences: [{used}]
+Choose a completely DIFFERENT sentence with a DIFFERENT topic/situation each time.
+
+Requirements:
+- Include at least ONE advanced/uncommon English word or idiom per sentence
+- Examples of good advanced words: eloquent, spontaneous, procrastinate, come to terms with, on the fence, pull off, bear in mind, shed light on
+- NOT basic words like go/come/eat/drink
+
 Respond ONLY raw JSON:
 {{
-  "sentence": "English sentence to speak",
+  "sentence": "English sentence with at least one advanced word",
   "korean": "한국어 번역",
   "tip": "발음 팁 (한국어 한 줄)",
-  "difficulty": "Easy/Medium/Hard"
+  "difficulty": "Easy/Medium/Hard",
+  "vocab": [
+    {{"word": "advanced word from sentence", "meaning": "한국어 뜻", "example": "another example sentence"}},
+    {{"word": "another key expression", "meaning": "한국어 뜻", "example": "another example sentence"}}
+  ]
 }}
 """
             try:
-                st.session_state.sp_data = json.loads(ai(p, json_mode=True))
+                d = json.loads(ai(p, json_mode=True))
+                st.session_state.sp_data = d
+                st.session_state.sp_history.append(d.get("sentence", ""))
             except Exception as e:
                 st.error(f"오류: {e}"); return
 
@@ -503,6 +528,20 @@ Respond ONLY with this exact JSON. The feedback field MUST be written in Korean 
               <div style='background:{bc};width:{sc}%;height:100%;border-radius:99px;'></div></div>
             <div style='color:#374151;'>{fb}</div>
         </div>""", unsafe_allow_html=True)
+
+        vocab = data.get("vocab", []) if data else []
+        if vocab:
+            st.markdown("**📖 단어 & 숙어 설명**")
+            for i, v in enumerate(vocab):
+                word = v.get("word", "")
+                meaning = v.get("meaning", "")
+                example = v.get("example", "")
+                if i > 0:
+                    st.divider()
+                st.markdown(f"🔹 **{word}** — {meaning}")
+                if example:
+                    st.caption(f"예) {example}")
+
         if st.button("다음 문장 →", type="primary"):
             clear(); st.rerun()
 
@@ -527,13 +566,27 @@ def show_wordorder():
 
     if not st.session_state.wo_data:
         with st.spinner("문제 만드는 중..."):
+            history = st.session_state.wo_history
+            used = ", ".join([f'"{s}"' for s in history[-8:]]) if history else "없음"
             p = f"""
 Word ordering exercise for Korean English learner. Category: '{st.session_state.cat}'.
-Use 5-7 words. Respond ONLY raw JSON:
+IMPORTANT: Do NOT repeat these already-used sentences: [{used}]
+
+Requirements:
+- Use 5-8 words
+- Include at least ONE advanced/uncommon English word or idiom per sentence
+- Examples of good advanced words: inevitable, spontaneous, meticulous, come to terms with, pull through, bring up, take for granted
+- NOT basic words like go/come/eat
+
+Respond ONLY raw JSON:
 {{
   "korean": "한국어 문장",
-  "sentence": "The correct English sentence",
-  "words": ["word1","word2","word3","word4","word5"]
+  "sentence": "The correct English sentence with at least one advanced word",
+  "words": ["word1","word2","word3","word4","word5"],
+  "vocab": [
+    {{"word": "advanced word from sentence", "meaning": "한국어 뜻", "example": "example sentence"}},
+    {{"word": "another key word or idiom", "meaning": "한국어 뜻", "example": "example sentence"}}
+  ]
 }}
 words = sentence split by spaces exactly.
 """
@@ -544,6 +597,7 @@ words = sentence split by spaces exactly.
                 random.shuffle(shuffled)
                 while [w for _,w in shuffled] == words and len(words) > 1:
                     random.shuffle(shuffled)
+                st.session_state.wo_history.append(d.get("sentence", ""))
                 st.session_state.wo_data = d
                 st.session_state.wo_avail = shuffled
                 st.session_state.wo_built = []
@@ -610,6 +664,20 @@ words = sentence split by spaces exactly.
             <div style='font-size:0.8rem;color:#6b7280;'>정답</div>
             <div style='font-size:1.1rem;font-weight:700;color:#166534;'>{data["sentence"]}</div>
         </div>""", unsafe_allow_html=True)
+
+        vocab = data.get("vocab", [])
+        if vocab:
+            st.markdown("**📖 단어 & 숙어 설명**")
+            for i, v in enumerate(vocab):
+                word = v.get("word", "")
+                meaning = v.get("meaning", "")
+                example = v.get("example", "")
+                if i > 0:
+                    st.divider()
+                st.markdown(f"🔹 **{word}** — {meaning}")
+                if example:
+                    st.caption(f"예) {example}")
+
         if st.button("다음 문장 →", type="primary"):
             _wo_clear(); st.rerun()
 
