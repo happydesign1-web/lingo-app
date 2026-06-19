@@ -2,6 +2,7 @@ import streamlit as st
 from groq import Groq
 from gtts import gTTS
 from streamlit_mic_recorder import mic_recorder
+from streamlit_sortables import sort_items
 import streamlit.components.v1 as components
 import json
 import io
@@ -17,51 +18,52 @@ st.set_page_config(page_title="🦉 링고", layout="centered", initial_sidebar_
 
 # ── CSS ──────────────────────────────────────────────────────────────────────
 st.markdown("""<style>
-.main .block-container { padding:0.5rem 0.8rem 4rem !important; max-width:520px !important; }
-[data-testid="stHorizontalBlock"] { gap:0.25rem !important; }
-[data-testid="stPills"] { display:flex; flex-wrap:wrap; gap:6px !important; margin:6px 0; }
+.main .block-container { padding:0.3rem 0.7rem 2rem !important; max-width:520px !important; }
+[data-testid="stHorizontalBlock"] { gap:0.2rem !important; }
+[data-testid="stPills"] { display:flex; flex-wrap:wrap; gap:5px !important; margin:4px 0; }
 [data-testid="stPills"] button {
-    border:3px solid #6366f1 !important;
-    border-radius:10px !important;
-    font-weight:700 !important;
-    font-size:0.95rem !important;
-    padding:6px 14px !important;
-    min-height:0 !important;
-    background:white !important;
-    color:#4338ca !important;
+    border:2px solid #6366f1 !important; border-radius:8px !important;
+    font-weight:700 !important; font-size:0.88rem !important;
+    padding:4px 10px !important; min-height:0 !important;
+    background:white !important; color:#4338ca !important;
 }
 [data-testid="stPills"] button:hover { background:#ede9fe !important; }
-.stButton>button { width:100% !important; min-height:50px !important; font-size:1rem !important;
-  border-radius:14px !important; font-weight:700 !important; margin:3px 0 !important; }
-.stRadio label { font-size:0.82rem !important; padding:7px 10px !important;
-  border:2px solid #e5e7eb; border-radius:12px; display:block; background:white; margin:3px 0; cursor:pointer; line-height:1.3 !important; }
-audio { width:100% !important; border-radius:10px; margin:6px 0; }
-.stTextInput input { font-size:1.1rem !important; padding:12px !important; border-radius:12px !important; }
-h1 { font-size:1.5rem !important; text-align:center; }
-h2,h3 { font-size:1.1rem !important; }
+.stButton>button { width:100% !important; min-height:40px !important; font-size:0.9rem !important;
+  border-radius:12px !important; font-weight:700 !important; margin:2px 0 !important; padding:5px !important; }
+.stRadio label, [data-testid="stRadio"] label {
+  font-size:0.8rem !important; padding:6px 10px !important;
+  border:2px solid #e5e7eb !important; border-radius:10px !important;
+  display:block !important; background:white !important; color:#111827 !important;
+  margin:2px 0 !important; cursor:pointer !important; line-height:1.3 !important; }
+audio { width:100% !important; border-radius:8px !important; margin:2px 0 !important; }
+.stTextInput input { font-size:1rem !important; padding:8px !important; border-radius:10px !important; }
+h1 { font-size:1.2rem !important; text-align:center; margin:0 0 2px !important; }
+h2,h3 { font-size:0.95rem !important; margin:1px 0 3px !important; }
 #MainMenu,footer,header { visibility:hidden; }
 [data-testid="stSidebarNav"] { display:none; }
+[data-testid="stExpander"] { margin:2px 0 !important; }
 .score-bar { display:flex; justify-content:space-around; background:#f8fafc;
-  border-radius:16px; padding:10px 8px; margin:6px 0 12px; border:2px solid #e2e8f0;
-  font-size:1rem; font-weight:700; }
-.q-card { background:linear-gradient(135deg,#6366f1,#8b5cf6); border-radius:18px;
-  padding:24px 18px; text-align:center; margin:8px 0; color:white;
-  font-size:1.3rem; font-weight:700; box-shadow:0 4px 14px rgba(99,102,241,.3); }
-.correct-box { background:#dcfce7; border:2px solid #22c55e; border-radius:14px;
-  padding:14px; text-align:center; font-size:1.1rem; font-weight:700; color:#166534; margin:8px 0; }
-.wrong-box { background:#fee2e2; border:2px solid #ef4444; border-radius:14px;
-  padding:14px; text-align:center; font-size:1.1rem; font-weight:700; color:#991b1b; margin:8px 0; }
+  border-radius:12px; padding:6px 8px; margin:2px 0 6px; border:1px solid #e2e8f0;
+  font-size:0.85rem; font-weight:700; }
+.q-card { background:linear-gradient(135deg,#6366f1,#8b5cf6); border-radius:14px;
+  padding:14px 12px; text-align:center; margin:4px 0; color:white;
+  font-size:1rem; font-weight:700; box-shadow:0 3px 10px rgba(99,102,241,.3); line-height:1.45; }
+.correct-box { background:#dcfce7; border:2px solid #22c55e; border-radius:12px;
+  padding:10px; text-align:center; font-size:0.95rem; font-weight:700; color:#166534; margin:5px 0; }
+.wrong-box { background:#fee2e2; border:2px solid #ef4444; border-radius:12px;
+  padding:10px; text-align:center; font-size:0.95rem; font-weight:700; color:#991b1b; margin:5px 0; }
 .match-done { background:#dcfce7 !important; border:2px solid #22c55e !important;
-  border-radius:12px; padding:12px; margin:4px 0; text-align:center;
-  font-weight:700; color:#166534; font-size:0.95rem; }
-.story-box { background:#f8fafc; border-left:4px solid #6366f1; border-radius:12px;
-  padding:16px; margin:10px 0; font-size:1rem; line-height:1.8; color:#1f2937; }
-.prog { background:#e5e7eb; border-radius:99px; height:10px; margin:6px 0 12px; overflow:hidden; }
+  border-radius:10px; padding:8px; margin:3px 0; text-align:center;
+  font-weight:700; color:#166534; font-size:0.85rem; }
+.story-box { background:#f8fafc; border-left:4px solid #6366f1; border-radius:10px;
+  padding:10px 12px; margin:4px 0; font-size:0.88rem; line-height:1.6; color:#1f2937;
+  max-height:120px; overflow-y:auto; }
+.prog { background:#e5e7eb; border-radius:99px; height:8px; margin:3px 0 6px; overflow:hidden; }
 .prog-fill { background:#22c55e; height:100%; border-radius:99px; transition:width .4s; }
-.built-area { min-height:54px; background:#f0fdf4; border:2px solid #22c55e;
-  border-radius:14px; padding:10px 12px; margin:8px 0; display:flex; flex-wrap:wrap; gap:6px; align-items:center; }
+.built-area { min-height:44px; background:#f0fdf4; border:2px solid #22c55e;
+  border-radius:12px; padding:8px 10px; margin:5px 0; display:flex; flex-wrap:wrap; gap:5px; align-items:center; }
 .tile { display:inline-block; background:white; border:2px solid #6366f1;
-  border-radius:10px; padding:7px 13px; font-size:0.95rem; font-weight:600; color:#4338ca; }
+  border-radius:8px; padding:5px 10px; font-size:0.88rem; font-weight:600; color:#4338ca; }
 </style>""", unsafe_allow_html=True)
 
 # ── 세션 초기화 ───────────────────────────────────────────────────────────────
@@ -456,18 +458,19 @@ IMPORTANT: Do NOT use any of these already-used sentences: [{used}]
 Choose a completely DIFFERENT sentence with a DIFFERENT topic/situation each time.
 
 Requirements:
-- Include at least ONE advanced/uncommon English word or idiom per sentence
-- Examples of good advanced words: eloquent, spontaneous, procrastinate, come to terms with, on the fence, pull off, bear in mind, shed light on
-- NOT basic words like go/come/eat/drink
+- MAXIMUM 10 words per sentence. Short and natural.
+- Include ONE slightly advanced word or idiom (not too hard)
+- NOT basic words like go/come/eat/drink, but also NOT academic run-on sentences
 
-LANGUAGE RULE: korean / tip / vocab meaning fields MUST be written in Korean (한국어) ONLY.
-NEVER use Russian, Vietnamese, Chinese, Japanese, or any other language. Korean characters only for those fields.
+CRITICAL LANGUAGE RULE: "korean", "tip", "vocab meaning" 필드는 반드시 한국어(Korean)로만 작성.
+절대로 일본어(Japanese/ひらがな/カタカナ/漢字), 러시아어(Russian/кириллица), 베트남어, 중국어, 기타 언어 사용 금지.
+오직 한글(가나다라...)만 사용.
 
 Respond ONLY raw JSON:
 {{
-  "sentence": "English sentence with at least one advanced word",
-  "korean": "한국어 번역만",
-  "tip": "발음 팁 (한국어만)",
+  "sentence": "English sentence (max 10 words)",
+  "korean": "한국어 번역 (한글만, 다른 언어 절대 금지)",
+  "tip": "발음 팁 (한글만)",
   "difficulty": "Easy/Medium/Hard",
   "vocab": [
     {{"word": "advanced word from sentence", "meaning": "한국어 뜻만", "example": "another example sentence"}},
@@ -626,18 +629,37 @@ words = sentence split by spaces exactly.
     st.markdown('<div style="text-align:center;color:#6b7280;font-size:0.9rem;">단어를 순서대로 클릭해서 문장을 완성하세요!</div>', unsafe_allow_html=True)
     st.markdown(f'<div class="q-card">{data["korean"]}</div>', unsafe_allow_html=True)
 
-    # 만들고 있는 문장
-    st.markdown("**내가 만드는 문장:**")
-    if built:
+    # 만들고 있는 문장 - 드래그로 순서 변경, 단어 누르면 빠짐
+    st.markdown("**내가 만드는 문장** *(드래그로 순서 변경 / 단어 누르면 빠져요)*")
+    if built and not st.session_state.wo_ans:
+        built_words = [w for _, w in built]
+        new_order = sort_items(built_words, key=f"wo_sort_{len(avail)}")
+        # 순서 변경 감지
+        if new_order != built_words:
+            remaining = list(built)
+            new_built = []
+            for nw in new_order:
+                for item in remaining:
+                    if item[1] == nw:
+                        new_built.append(item)
+                        remaining.remove(item)
+                        break
+            st.session_state.wo_built = new_built
+            st.rerun()
+        # 단어 누르면 빠지기
+        rem = st.pills("", built_words, key=f"wo_remove_{len(built)}_{len(avail)}", label_visibility="collapsed")
+        if rem is not None:
+            for item in list(built):
+                if item[1] == rem:
+                    built.remove(item)
+                    avail.append(item)
+                    break
+            st.session_state.wo_built = built
+            st.session_state.wo_avail = avail
+            st.rerun()
+    elif built and st.session_state.wo_ans:
         tiles = " ".join([f'<span class="tile">{w}</span>' for _,w in built])
         st.markdown(f'<div class="built-area">{tiles}</div>', unsafe_allow_html=True)
-        if not st.session_state.wo_ans:
-            if st.button("← 마지막 단어 지우기"):
-                last = built.pop()
-                avail.append(last)
-                st.session_state.wo_built = built
-                st.session_state.wo_avail = avail
-                st.rerun()
     else:
         st.markdown('<div class="built-area" style="justify-content:center;"><span style="color:#9ca3af;">여기에 단어가 쌓여요</span></div>', unsafe_allow_html=True)
 
