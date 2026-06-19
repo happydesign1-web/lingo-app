@@ -140,6 +140,31 @@ def nav(clear_fn=None):
             st.rerun()
     return c2
 
+def show_vocab(vocab_list):
+    if not vocab_list:
+        return
+    st.markdown("**📖 단어 & 숙어 설명**")
+    items_html = ""
+    for i, v in enumerate(vocab_list):
+        word = v.get("word", "")
+        meaning = v.get("meaning", "")
+        example = v.get("example", "")
+        b64 = ""
+        if word:
+            fp = tts(word)
+            if fp:
+                fp.seek(0)
+                b64 = base64.b64encode(fp.read()).decode()
+        sep = '<hr style="border:none;border-top:1px solid #e5e7eb;margin:6px 0;">' if i > 0 else ""
+        if b64:
+            btn = f'<button onclick="new Audio(\'data:audio/mp3;base64,{b64}\').play()" style="background:#ede9fe;border:2px solid #6366f1;border-radius:8px;padding:4px 10px;font-size:0.92rem;font-weight:700;color:#4338ca;cursor:pointer;margin-right:6px;">🔊 {word}</button>'
+        else:
+            btn = f'<strong style="color:#4338ca;">🔹 {word}</strong>'
+        ex_html = f'<div style="color:#6b7280;font-size:0.82rem;margin-top:3px;padding-left:2px;">예) {example}</div>' if example else ""
+        items_html += f'{sep}<div style="margin:4px 0;">{btn}<span style="color:#374151;font-size:0.88rem;vertical-align:middle;"> — {meaning}</span>{ex_html}</div>'
+    height = len(vocab_list) * 68 + 16
+    components.html(f"""<!DOCTYPE html><html><body style="margin:0;padding:6px 2px;background:transparent;font-family:-apple-system,BlinkMacSystemFont,sans-serif;">{items_html}</body></html>""", height=height, scrolling=False)
+
 def prog_bar(n, total):
     pct = int(n/total*100) if total else 0
     st.markdown(f'<div class="prog"><div class="prog-fill" style="width:{pct}%;"></div></div>', unsafe_allow_html=True)
@@ -286,18 +311,7 @@ Shuffle the options array randomly.
             <div style='font-size:0.9rem;color:#374151;margin-top:6px;'>💡 {data.get('tip','')}</div>
         </div>""", unsafe_allow_html=True)
 
-        vocab = data.get("vocab", [])
-        if vocab:
-            st.markdown("**📖 단어 & 숙어 설명**")
-            for i, v in enumerate(vocab):
-                word = v.get("word", "")
-                meaning = v.get("meaning", "")
-                example = v.get("example", "")
-                if i > 0:
-                    st.divider()
-                st.markdown(f"🔹 **{word}** — {meaning}")
-                if example:
-                    st.caption(f"예) {example}")
+        show_vocab(data.get("vocab", []))
 
         if st.button("다음 문제 →", type="primary"):
             clear(); st.rerun()
@@ -536,18 +550,7 @@ Respond ONLY with this exact JSON. The feedback field MUST be written in Korean 
             <div style='color:#374151;'>{fb}</div>
         </div>""", unsafe_allow_html=True)
 
-        vocab = data.get("vocab", []) if data else []
-        if vocab:
-            st.markdown("**📖 단어 & 숙어 설명**")
-            for i, v in enumerate(vocab):
-                word = v.get("word", "")
-                meaning = v.get("meaning", "")
-                example = v.get("example", "")
-                if i > 0:
-                    st.divider()
-                st.markdown(f"🔹 **{word}** — {meaning}")
-                if example:
-                    st.caption(f"예) {example}")
+        show_vocab(data.get("vocab", []) if data else [])
 
         if st.button("다음 문장 →", type="primary"):
             clear(); st.rerun()
@@ -581,9 +584,9 @@ IMPORTANT: Do NOT repeat these already-used sentences: [{used}]
 
 Requirements:
 - Use 5-8 words
-- Include at least ONE advanced/uncommon English word or idiom per sentence
-- Examples of good advanced words: inevitable, spontaneous, meticulous, come to terms with, pull through, bring up, take for granted
-- NOT basic words like go/come/eat
+- Mix of easy/medium/hard: most sentences intermediate level, occasionally one harder word
+- NOT kindergarten level (not just "I go to school") but also NOT overly academic
+- Natural everyday English that a learner would actually use
 
 LANGUAGE RULE: korean / vocab meaning fields MUST be written in Korean (한국어) ONLY.
 NEVER use Russian, Vietnamese, Chinese, Japanese, or any other language. Korean characters only for those fields.
@@ -594,8 +597,8 @@ Respond ONLY raw JSON:
   "sentence": "The correct English sentence with at least one advanced word",
   "words": ["word1","word2","word3","word4","word5"],
   "vocab": [
-    {{"word": "advanced word from sentence", "meaning": "한국어 뜻만", "example": "example sentence"}},
-    {{"word": "another key word or idiom", "meaning": "한국어 뜻만", "example": "example sentence"}}
+    {{"word": "key word or expression from sentence", "meaning": "한국어 뜻만", "example": "example sentence"}},
+    {{"word": "another useful word or phrase", "meaning": "한국어 뜻만", "example": "example sentence"}}
   ]
 }}
 words = sentence split by spaces exactly.
@@ -675,18 +678,7 @@ words = sentence split by spaces exactly.
             <div style='font-size:1.1rem;font-weight:700;color:#166534;'>{data["sentence"]}</div>
         </div>""", unsafe_allow_html=True)
 
-        vocab = data.get("vocab", [])
-        if vocab:
-            st.markdown("**📖 단어 & 숙어 설명**")
-            for i, v in enumerate(vocab):
-                word = v.get("word", "")
-                meaning = v.get("meaning", "")
-                example = v.get("example", "")
-                if i > 0:
-                    st.divider()
-                st.markdown(f"🔹 **{word}** — {meaning}")
-                if example:
-                    st.caption(f"예) {example}")
+        show_vocab(data.get("vocab", []))
 
         if st.button("다음 문장 →", type="primary"):
             _wo_clear(); st.rerun()
