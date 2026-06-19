@@ -2,7 +2,6 @@ import streamlit as st
 from groq import Groq
 from gtts import gTTS
 from streamlit_mic_recorder import mic_recorder
-from streamlit_sortables import sort_items
 import streamlit.components.v1 as components
 import json
 import io
@@ -629,34 +628,33 @@ words = sentence split by spaces exactly.
     st.markdown('<div style="text-align:center;color:#6b7280;font-size:0.9rem;">단어를 순서대로 클릭해서 문장을 완성하세요!</div>', unsafe_allow_html=True)
     st.markdown(f'<div class="q-card">{data["korean"]}</div>', unsafe_allow_html=True)
 
-    # 만들고 있는 문장 - 드래그로 순서 변경, 단어 누르면 빠짐
-    st.markdown("**내가 만드는 문장** *(드래그로 순서 변경 / 단어 누르면 빠져요)*")
+    # 만들고 있는 문장 - ← → 버튼으로 순서 변경
+    st.markdown("**내가 만드는 문장** *(← → 순서변경 / 단어 누르면 빠져요)*")
     if built and not st.session_state.wo_ans:
-        built_words = [w for _, w in built]
-        new_order = sort_items(built_words, key=f"wo_sort_{len(avail)}")
-        # 순서 변경 감지
-        if new_order != built_words:
-            remaining = list(built)
-            new_built = []
-            for nw in new_order:
-                for item in remaining:
-                    if item[1] == nw:
-                        new_built.append(item)
-                        remaining.remove(item)
-                        break
-            st.session_state.wo_built = new_built
-            st.rerun()
-        # 단어 누르면 빠지기
-        rem = st.pills("", built_words, key=f"wo_remove_{len(built)}_{len(avail)}", label_visibility="collapsed")
-        if rem is not None:
-            for item in list(built):
-                if item[1] == rem:
-                    built.remove(item)
+        for idx in range(len(built)):
+            orig_i, w = built[idx]
+            c1, c2, c3, c4 = st.columns([1, 1, 5, 1])
+            with c1:
+                if idx > 0:
+                    if st.button("←", key=f"mv_l_{idx}_{orig_i}"):
+                        built[idx], built[idx-1] = built[idx-1], built[idx]
+                        st.session_state.wo_built = built
+                        st.rerun()
+            with c2:
+                if idx < len(built)-1:
+                    if st.button("→", key=f"mv_r_{idx}_{orig_i}"):
+                        built[idx], built[idx+1] = built[idx+1], built[idx]
+                        st.session_state.wo_built = built
+                        st.rerun()
+            with c3:
+                st.markdown(f'<div class="tile" style="text-align:center;margin-top:4px;">{w}</div>', unsafe_allow_html=True)
+            with c4:
+                if st.button("✕", key=f"rm_{idx}_{orig_i}"):
+                    item = built.pop(idx)
                     avail.append(item)
-                    break
-            st.session_state.wo_built = built
-            st.session_state.wo_avail = avail
-            st.rerun()
+                    st.session_state.wo_built = built
+                    st.session_state.wo_avail = avail
+                    st.rerun()
     elif built and st.session_state.wo_ans:
         tiles = " ".join([f'<span class="tile">{w}</span>' for _,w in built])
         st.markdown(f'<div class="built-area">{tiles}</div>', unsafe_allow_html=True)
